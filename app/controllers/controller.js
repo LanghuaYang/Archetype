@@ -1,20 +1,44 @@
-﻿angular.module("umbraco").controller("Imulus.ArchetypeController", function ($scope, $http, assetsService, angularHelper, notificationsService, $timeout) {
-
-    //$scope.model.value = "";
-    $scope.model.hideLabel = $scope.model.config.hideLabel == 1;
+﻿angular.module("umbraco").controller("Imulus.ArchetypeController", function ($scope, $http, assetsService, angularHelper, notificationsService, $timeout, archetypePropertyEditorResource) {
 
     //get a reference to the current form
     var form = angularHelper.getCurrentForm($scope);
 
-    //set the config equal to our prevalue config
-    $scope.model.config = $scope.model.config.archetypeConfig;
+    //$scope.model.value = "";
+    $scope.model.hideLabel = $scope.model.config.hideLabel == 1;
 
-    //ini the model
-    $scope.model.value = $scope.model.value || getDefaultModel($scope.model.config);
+    // use the "archetypeConfig" config value as identifier to fetch the Archetype configuration from API controller
+    //console.log("loading archetypeConfig: " + $scope.model.config.archetypeConfig);
+    archetypePropertyEditorResource.getConfiguration($scope.model.config.archetypeConfig).then(function (data) {
+        
+        //set the config equal to the Archetype config fetched from API controller
+        $scope.model.config = JSON.parse(data.Configuration);
 
-    //ini the render model
-    $scope.archetypeRenderModel = {};
-    initArchetypeRenderModel();
+        //ini the model
+        $scope.model.value = $scope.model.value || getDefaultModel($scope.model.config);
+
+        //ini the render model
+        $scope.archetypeRenderModel = {};
+        initArchetypeRenderModel();
+
+        //ini the fieldset expand/collapse
+        $scope.focusFieldset();
+
+        //developerMode helpers
+        $scope.archetypeRenderModel.toString = stringify;
+
+        //custom js
+        if ($scope.model.config.customJsPath) {
+            assetsService.loadJs($scope.model.config.customJsPath);
+        }
+
+        //archetype css
+        assetsService.loadCss("/App_Plugins/Archetype/css/archetype.css");
+
+        //custom css
+        if ($scope.model.config.customCssPath) {
+            assetsService.loadCss($scope.model.config.customCssPath);
+        }
+    });
 
     //helper to get $eval the labelTemplate
     $scope.getFieldsetTitle = function(fieldsetConfigModel, fieldsetIndex) {
@@ -175,12 +199,6 @@
         }
     }
 
-    //ini the fieldset expand/collapse
-    $scope.focusFieldset();
-
-    //developerMode helpers
-    $scope.archetypeRenderModel.toString = stringify;
-
     //encapsulate stringify (should be built into browsers, not sure of IE support)
     function stringify() {
         return JSON.stringify(this);
@@ -327,17 +345,4 @@
         }
     });
 
-    //custom js
-    if ($scope.model.config.customJsPath) {
-        assetsService.loadJs($scope.model.config.customJsPath);
-    }
-
-    //archetype css
-    assetsService.loadCss("/App_Plugins/Archetype/css/archetype.css");
-
-    //custom css
-    if($scope.model.config.customCssPath)
-    {
-        assetsService.loadCss($scope.model.config.customCssPath);
-    }
 });

@@ -232,7 +232,9 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Events\ExpireCache.cs" />
     <Compile Include="Extensions\Extensions.cs" />
+    <Compile Include="Install\InstallActions.cs" />
     <Compile Include="Models\Archetype.cs" />
+    <Compile Include="Models\ArchetypeConfiguration.cs" />
     <Compile Include="Models\ArchetypePreValue.cs" />
     <Compile Include="Models\ArchetypePreValueFieldset.cs" />
     <Compile Include="Models\ArchetypePreValueProperty.cs" />
@@ -248,6 +250,10 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

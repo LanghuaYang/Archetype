@@ -8,9 +8,6 @@ angular.module("umbraco").controller("Imulus.ArchetypeConfigController", functio
     var newFieldsetModel = '{"alias": "", "remove": false, "collapse": false, "labelTemplate": "", "icon": "", "label": "", "properties": [' + newPropertyModel + ']}';
     var defaultFieldsetConfigModel = JSON.parse('{"showAdvancedOptions": false, "startWithAddButton": false, "hideFieldsetToolbar": false, "enableMultipleFieldsets": false, "hideFieldsetControls": false, "hidePropertyLabel": false, "maxFieldsets": null, "enableCollapsing": true, "fieldsets": [' + newFieldsetModel + ']}');
 
-    //ini the model
-    $scope.model.value = $scope.model.value || defaultFieldsetConfigModel;
-
     //ini the render model
     initConfigRenderModel();
 
@@ -73,9 +70,6 @@ angular.module("umbraco").controller("Imulus.ArchetypeConfigController", functio
         }
     }
 
-    //ini the fieldsets
-    $scope.focusFieldset();
-
     //function that determines how to manage expanding/collapsing properties
     $scope.focusProperty = function(properties, property){
         var iniState;
@@ -101,14 +95,6 @@ angular.module("umbraco").controller("Imulus.ArchetypeConfigController", functio
             property.collapse = !iniState;
         }
     }
-
-    //ini the properties
-    _.each($scope.archetypeConfigRenderModel.fieldsets, function(fieldset){
-            $scope.focusProperty(fieldset.properties);
-    });
-
-    //setup JSON.stringify helpers
-    $scope.archetypeConfigRenderModel.toString = stringify;
 
     //encapsulate stringify (should be built into browsers, not sure of IE support)
     function stringify() {
@@ -237,36 +223,63 @@ angular.module("umbraco").controller("Imulus.ArchetypeConfigController", functio
     //helper to ini the render model
     function initConfigRenderModel()
     {
-        $scope.archetypeConfigRenderModel = $scope.model.value;
-
-        _.each($scope.archetypeConfigRenderModel.fieldsets, function(fieldset){
-
-            fieldset.remove = false;
-            if (fieldset.alias.length > 0)
-                fieldset.aliasIsDirty = true;
-
-            if(fieldset.label)
-            {
-                fieldset.collapse = true;
+        // use the model value as identifier to fetch the Archetype configuration from API controller
+        archetypePropertyEditorResource.getConfiguration($scope.model.value).then(function (data) {
+            // no matter if the configuration exists or not, the API controller returns the id it expects to get back when saving 
+            $scope.model.value = data.Id;
+            if (data.Configuration) {
+                $scope.archetypeConfigRenderModel = JSON.parse(data.Configuration);
+            }
+            else {
+                console.log("- no data... using default render model");
+                $scope.archetypeConfigRenderModel = defaultFieldsetConfigModel;
             }
 
-            _.each(fieldset.properties, function(fieldset){
+            _.each($scope.archetypeConfigRenderModel.fieldsets, function (fieldset) {
+
                 fieldset.remove = false;
                 if (fieldset.alias.length > 0)
                     fieldset.aliasIsDirty = true;
+
+                if (fieldset.label) {
+                    fieldset.collapse = true;
+                }
+
+                _.each(fieldset.properties, function (fieldset) {
+                    fieldset.remove = false;
+                    if (fieldset.alias.length > 0)
+                        fieldset.aliasIsDirty = true;
+                });
             });
+
+            //ini the fieldsets
+            $scope.focusFieldset();
+
+            //ini the properties
+            _.each($scope.archetypeConfigRenderModel.fieldsets, function (fieldset) {
+                $scope.focusProperty(fieldset.properties);
+            });
+
+            //setup JSON.stringify helpers
+            $scope.archetypeConfigRenderModel.toString = stringify;
+
         });
     }
 
     //sync things up on save
-    $scope.$on("formSubmitting", function (ev, args) {
+    //$scope.$on("formSubmitting", function (ev, args) {
+    //    syncModelToRenderModel();
+    //});
+
+    //sync things up on save (use "formSubmitted" instead of "formSubmitting" to save data back to API controller *after* validation)
+    $scope.$on("formSubmitted", function (ev, args) {
         syncModelToRenderModel();
     });
 
     //helper to sync the model to the renderModel
     function syncModelToRenderModel()
     {
-        $scope.model.value = $scope.archetypeConfigRenderModel;
+        var value = $scope.archetypeConfigRenderModel;
         var fieldsets = [];
 
         _.each($scope.archetypeConfigRenderModel.fieldsets, function(fieldset){
@@ -286,7 +299,12 @@ angular.module("umbraco").controller("Imulus.ArchetypeConfigController", functio
             }
         });
 
-        $scope.model.value.fieldsets = fieldsets;
+        value.fieldsets = fieldsets;
+
+        // use model value as identifier to store the Archetype configuration to the API controller
+        if (archetypePropertyEditorResource.saveConfiguration($scope.model.value, $scope.archetypeConfigRenderModel.toString()) == false) {
+            console.log("TODO: handle error in save");
+        }
     }
 
     //archetype css

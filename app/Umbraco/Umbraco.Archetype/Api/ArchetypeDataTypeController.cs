@@ -5,9 +5,12 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using Umbraco.Core.Models;
+using Umbraco.Core.Persistence;
 using Umbraco.Web.Models.ContentEditing;
 using Umbraco.Web.Mvc;
 using Umbraco.Web.Editors;
+using System.Net.Http;
+using Archetype.Umbraco.Models;
 
 namespace Archetype.Umbraco.Api
 {
@@ -38,5 +41,41 @@ namespace Archetype.Umbraco.Api
             var dataTypeDisplay = Mapper.Map<IDataTypeDefinition, DataTypeDisplay>(dataType);
             return new { selectedEditor = dataTypeDisplay.SelectedEditor, preValues = dataTypeDisplay.PreValues };
         }
-    }
+
+		// TODO: set up VS code formatting rules to match the rest of the solution
+		public object GetConfiguration(Guid guid) {
+			return GetExistingConfiguration(guid) ?? new ArchetypeConfiguration { Id = Guid.NewGuid() };
+		}
+
+		public void PutConfiguration([FromBody]ArchetypeConfiguration configuration) {
+			System.Threading.Thread.Sleep(2000);
+
+			if(configuration.Id == Guid.Empty) {
+				// invalid
+				throw new HttpResponseException(HttpStatusCode.NotFound);
+			}
+			var existingConfiguration = GetExistingConfiguration(configuration.Id);
+			if(existingConfiguration == null) {
+				existingConfiguration = new ArchetypeConfiguration {
+					Id = configuration.Id,
+					Configuration = configuration.Configuration
+				};
+				UmbracoDatabase.Insert(existingConfiguration);
+			}
+			else {
+				existingConfiguration.Configuration = configuration.Configuration;
+				UmbracoDatabase.Update(existingConfiguration);
+			}
+		}
+
+		private ArchetypeConfiguration GetExistingConfiguration(Guid guid) {
+			return UmbracoDatabase.FirstOrDefault<ArchetypeConfiguration>(string.Format("WHERE Id = '{0}'", guid));
+		}
+
+		private UmbracoDatabase UmbracoDatabase {
+			get {
+				return ApplicationContext.DatabaseContext.Database;
+			}
+		}
+	}
 }
