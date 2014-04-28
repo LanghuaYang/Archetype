@@ -1,4 +1,4 @@
-angular.module("umbraco").controller("Imulus.ArchetypeConfigController", function ($scope, $http, assetsService, dialogService, archetypePropertyEditorResource) {
+angular.module("umbraco").controller("Imulus.ArchetypeConfigController", function ($scope, $http, assetsService, dialogService, notificationsService, archetypePropertyEditorResource, angularHelper) {
 
     //$scope.model.value = "";
     //console.log($scope.model.value);
@@ -303,7 +303,7 @@ angular.module("umbraco").controller("Imulus.ArchetypeConfigController", functio
 
         // use model value as identifier to store the Archetype configuration to the API controller
         if (archetypePropertyEditorResource.saveConfiguration($scope.model.value, $scope.archetypeConfigRenderModel.toString()) == false) {
-            console.log("TODO: handle error in save");
+            notificationsService.error("Whoops! Something bad happened. We couldn't save your Archetype configuration.");
         }
     }
 
