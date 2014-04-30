@@ -12,6 +12,7 @@ $RECYCLE.BIN/
 
 app/less/*.css
 dist/
+site/
 node_modules/
 tmp/
 pkg/*.nupkg
@@ -25,6 +26,7 @@ pkg/*.zip
 [Pp]ackages/
 VersionInfo.cs
 
+*.cmd
 *.aps
 *.bak
 *.backup
