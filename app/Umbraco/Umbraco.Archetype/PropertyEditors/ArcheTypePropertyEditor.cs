@@ -12,6 +12,7 @@ using Umbraco.Core.PropertyEditors;
 using Umbraco.Core.Services;
 using Umbraco.Web.PropertyEditors;
 using Umbraco.Core.Logging;
+using Umbraco.Web.Models.ContentEditing;
 
 namespace Archetype.PropertyEditors
 {
@@ -113,8 +114,16 @@ namespace Archetype.PropertyEditors
 			}
             public override object ConvertEditorToDb(ContentPropertyData editorValue, object currentValue)
 			{
+				// TODO: need to deserialize currentValye as Archetype and use the current property values when calling "propEditor.ValueEditor.ConvertEditorToDb" below
+
 				if (editorValue.Value == null || editorValue.Value.ToString() == "")
 					return string.Empty;
+
+				IEnumerable<ContentItemFile> files = null;
+				if(editorValue.AdditionalData.ContainsKey("files"))
+				{
+					files = editorValue.AdditionalData["files"] as IEnumerable<ContentItemFile>;
+				}
 
 				var archetype = new ArchetypeHelper().DeserializeJsonToArchetype(editorValue.Value.ToString(), editorValue.PreValues);
 
@@ -124,9 +133,17 @@ namespace Archetype.PropertyEditors
 					{
                         try
                         {
+							var additionalData = new Dictionary<string, object>();
+							var json = propDef.Value as JObject;
+							var selectedFiles = json != null && json["selectedFiles"] != null ? json["selectedFiles"].Value<string>().Split(',') : null;
+							if(selectedFiles != null && files != null)
+							{
+								additionalData["files"] = files.Where(f => selectedFiles.Contains(f.FileName)).ToList();
+							}
+
 						    var dtd = ApplicationContext.Current.Services.DataTypeService.GetDataTypeDefinitionById(Guid.Parse(propDef.DataTypeGuid));
 						    var preValues = ApplicationContext.Current.Services.DataTypeService.GetPreValuesCollectionByDataTypeId(dtd.Id);
-						    var propData = new ContentPropertyData(propDef.Value, preValues, new Dictionary<string, object>());
+							var propData = new ContentPropertyData(propDef.Value, preValues, additionalData);
 						    var propEditor = PropertyEditorResolver.Current.GetByAlias(dtd.PropertyEditorAlias);
 						    propDef.Value = propEditor.ValueEditor.ConvertEditorToDb(propData, propDef.Value);
                         }
